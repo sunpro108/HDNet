@@ -28,7 +28,7 @@ class Iharmony4Dataset(BaseDataset):
     def _load_images_paths(self,):
         if self.isTrain == True:
             print('loading training file...')
-            self.trainfile = os.path.join(self.opt.dataset_root, 'train.txt')
+            self.trainfile = os.path.join(self.opt.dataset_root, 'IHD_train.txt')
             with open(self.trainfile,'r') as f:
                 for line in f.readlines():
                     line = line.rstrip()
@@ -48,7 +48,7 @@ class Iharmony4Dataset(BaseDataset):
 
         elif self.isTrain == False:
             print('loading test file...')
-            self.trainfile = os.path.join(self.opt.dataset_root, 'test.txt')
+            self.trainfile = os.path.join(self.opt.dataset_root, 'IHD_test.txt')
             with open(self.trainfile,'r') as f:
                 for line in f.readlines():
                     line = line.rstrip()
