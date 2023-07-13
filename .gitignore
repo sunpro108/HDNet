@@ -9,3 +9,5 @@ core*
 .history
 .vscode
 
+results*
+evaluate*
