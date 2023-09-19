@@ -37,7 +37,7 @@ def evaluateModel(epoch_number, model, opt, test_dataset, epoch, max_psnr, iters
     eval_results_fstr = open(eval_path, 'w')
     eval_results = {'mask': [], 'mse': [], 'psnr': [], 'fmse':[], 'ssim':[]}
 
-    for i, data in tqdm(enumerate(test_dataset)):
+    for i, data in tqdm(enumerate(test_dataset), total=len(test_dataset)):
         model.set_input(data)  # unpack data from data loader
         model.test()  # inference
         visuals = model.get_current_visuals()  # get image results
@@ -145,10 +145,6 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
             
-            if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
-                print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
-                save_suffix = 'iter_%d' % total_iters if opt.save_by_iter else 'latest'
-                model.save_networks(save_suffix)
 
             iter_data_time = time.time()
 
@@ -157,6 +153,10 @@ if __name__ == '__main__':
         if epoch_psnr > max_psnr:
             max_psnr = epoch_psnr
             max_epoch = epoch
+            # if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
+            print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
+            save_suffix = 'epoch_%d' % epoch if opt.save_by_iter else 'latest'
+            model.save_networks(save_suffix)
         print("max_psnr_epoch: " + str(max_epoch))
         writer.add_scalar('overall/MSE', epoch_mse, epoch)
         writer.add_scalar('overall/PSNR', epoch_psnr, epoch)
