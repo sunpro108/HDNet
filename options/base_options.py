@@ -4,6 +4,7 @@ from util import util
 import torch
 import models
 import data
+import time
 
 
 class BaseOptions():
@@ -20,10 +21,10 @@ class BaseOptions():
     def initialize(self, parser):
         """Define the common options that are used in both training and test."""
         # basic parameters
-        parser.add_argument('--dataset_root',type=str, default='./datasets/IH256/', help='path to iHarmony4 dataset') #mia
+        parser.add_argument('--dataset_root',type=str, default='./datasets', help='path to iHarmony4 dataset') #mia
         parser.add_argument('--name', type=str, default='experiment_train', help='name of the experiment. It decides where to store samples and models')
         parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
-        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
+        parser.add_argument('--checkpoints_dir', type=str, default='./home_logs', help='models are saved here')
         parser.add_argument('--is_train', type=bool, default=True, help='train mode')
         # model parameters
         parser.add_argument('--model', type=str, default='hdnet', help='chooses which model to use. [cycle_gan | pix2pix | test | colorization]')

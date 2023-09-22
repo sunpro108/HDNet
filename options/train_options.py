@@ -39,6 +39,7 @@ class TrainOptions(BaseOptions):
         parser.set_defaults(pool_size=0, gan_mode='vanilla')
 
         parser.add_argument('--lambda_L1', type=float, default=1.0, help='weight for L1 loss')
+        parser.add_argument('--lambda_Fft', type=float, default=0.00, help='weight for Fft loss')
         parser.add_argument('--gp_ratio', type=float, default=1.0, help='weight for gradient_penalty')
         parser.add_argument('--lambda_a', type=float, default=1.0, help='weight for adversarial loss')
         parser.add_argument('--lambda_v', type=float, default=1.0, help='weight for verification loss')

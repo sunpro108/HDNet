@@ -5,13 +5,13 @@ from . import networks
 import torch.nn.functional as F
 from torch import nn, cuda
 from torch.autograd import Variable
-from .fMSE import MaskWeightedMSE
+from .fMSE import MaskWeightedMSE, MaskedFftLoss
 
 class HDNetModel(BaseModel):
     def __init__(self, opt):
         BaseModel.__init__(self, opt)
         # specify the training losses you want to print out. The training/test scripts will call <BaseModel.get_current_losses>
-        self.loss_names = ['G_L1']
+        self.loss_names = ['G_L1', 'G_Fft']
         # specify the images you want to save/display. The training/test scripts will call <BaseModel.get_current_visuals>
         self.visual_names = ['comp', 'real', 'output', 'mask', 'real_f', 'fake_f', 'bg', 'attentioned']
         # specify the models you want to save to the disk. The training/test scripts will call <BaseModel.save_networks> and <BaseModel.load_networks>
@@ -26,6 +26,7 @@ class HDNetModel(BaseModel):
         if self.isTrain:
             # define loss functions
             self.criterionL1 = MaskWeightedMSE(100)
+            self.criterionFft = MaskedFftLoss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr*opt.g_lr_ratio, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
@@ -53,7 +54,9 @@ class HDNetModel(BaseModel):
     def backward_G(self):
         """Calculate GAN and L1 loss for the generator"""
         self.loss_G_L1 = self.criterionL1(self.attentioned, self.real, self.mask) * self.opt.lambda_L1
-        self.loss_G = self.loss_G_L1
+        self.loss_G_Fft = self.criterionFft(self.attentioned, self.real, self.mask) * self.opt.lambda_Fft
+        self.loss_G = self.loss_G_L1 + self.loss_G_Fft
+        # self.loss_G = self.loss_G_L1
         self.loss_G.backward()
 
     def optimize_parameters(self):

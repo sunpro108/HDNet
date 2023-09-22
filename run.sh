@@ -1,1 +1,1 @@
-python   train_evaluate.py --dataset_root datasets --checkpoints_dir results --batch_size 12 --save_by_iter
+python   train_evaluate.py --name exp_HCOCO_$(date +%y%m%d_%H%M) --dataset_root datasets/HCOCO --batch_size 12 --save_by_iter --lambda_Fft 1  --gpu_ids 1 
