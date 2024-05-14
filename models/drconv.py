@@ -81,11 +81,12 @@ class DRConv2d(nn.Module):
             nn.Sigmoid(),
             nn.Conv2d(region_num * region_num, region_num * in_channels * out_channels, kernel_size=1, groups=region_num)
         )
-        self.conv_guide = nn.Conv2d(in_channels, region_num, kernel_size=kernel_size, **kwargs)
+        # self.conv_guide = nn.Conv2d(in_channels, region_num, kernel_size=kernel_size, **kwargs)
         
         self.corr = Correlation(use_slow=False)
         self.kwargs = kwargs
         self.act = nn.Sigmoid()
+
     def forward(self, input, mask):
         kernel = self.conv_kernel(input)
         kernel = kernel.view(kernel.size(0), -1, kernel.size(2), kernel.size(3)) # B x (r*in*out) x W X H

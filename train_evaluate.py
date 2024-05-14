@@ -12,6 +12,8 @@ from skimage.metrics import peak_signal_noise_ratio
 from skimage.metrics import structural_similarity as ssim
 from tqdm import tqdm
 from skimage import data, io
+from accelerate import Accelerator
+
 
 def setup_seed(seed):
     torch.manual_seed(seed)
@@ -106,7 +108,10 @@ def updateWriterInterval(writer, metrics, epoch):
 
 if __name__ == '__main__':
     # setup_seed(6)
+    accelerator = Accelerator()
     opt = TrainOptions().parse()   # get training 
+    opt.accelerator = accelerator 
+    opt.device = accelerator.device
     # check if gpus is are mutiple if so warn it could lead to inefficiency
     if len(opt.gpu_ids) > 1:
         print('WARNING: Multiple GPUs detected, this could lead to inefficiency')
@@ -119,10 +124,12 @@ if __name__ == '__main__':
     
     train_dataloader = train_dataset.load_data()
     test_dataloader = test_dataset.load_data()
+    train_dataloader, test_dataloader = accelerator.prepare(train_dataloader, test_dataloader)
     print('The total batches of training images = %d' % len(train_dataset.dataloader))
 
     model = create_model(opt)      # create a model given opt.model and other options
     model.setup(opt)               # regular setup: load and print networks; create schedulers
+    # model.netG, model.optimizer_G  = accelerator.prepare(model.netG, model.optimizer_G)
     total_iters = 0                # the total number of training iterations
     writer = SummaryWriter(os.path.join(opt.checkpoints_dir, opt.name))
 
@@ -146,27 +153,34 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
             
+            #! accelerator wait all process
+            accelerator.wait_for_everyone()
+            
             if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
                 print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
                 save_suffix = 'iter_%d' % total_iters if opt.save_by_iter else 'latest'
                 model.save_networks(save_suffix)
 
             iter_data_time = time.time()
+            accelerator.wait_for_everyone()
 
+        accelerator.wait_for_everyone()
         # evaluate for every epoch
-        epoch_mse, epoch_psnr, epoch_interval_metrics = evaluateModel(epoch, model, opt, test_dataloader, epoch, max_psnr)
-        if epoch_psnr > max_psnr:
-            max_psnr = epoch_psnr
-            max_epoch = epoch
-        print("max_psnr_epoch: " + str(max_epoch))
-        writer.add_scalar('overall/MSE', epoch_mse, epoch)
-        writer.add_scalar('overall/PSNR', epoch_psnr, epoch)
-        updateWriterInterval(writer, epoch_interval_metrics, epoch)
+        if accelerator.is_main_process:
+            epoch_mse, epoch_psnr, epoch_interval_metrics = evaluateModel(epoch, model, opt, test_dataloader, epoch, max_psnr)
+            if epoch_psnr > max_psnr:
+                max_psnr = epoch_psnr
+                max_epoch = epoch
+            print("max_psnr_epoch: " + str(max_epoch))
+            writer.add_scalar('overall/MSE', epoch_mse, epoch)
+            writer.add_scalar('overall/PSNR', epoch_psnr, epoch)
+            updateWriterInterval(writer, epoch_interval_metrics, epoch)
+            print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
+            print('Current learning rate: {}'.format(model.schedulers[0].get_last_lr()))
 
-        torch.cuda.empty_cache()
 
-        print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))
         model.update_learning_rate()                     # update learning rates at the end of every epoch.
-        print('Current learning rate: {}'.format(model.schedulers[0].get_last_lr()))
+        torch.cuda.empty_cache()
+        accelerator.wait_for_everyone()
 
     writer.close()
