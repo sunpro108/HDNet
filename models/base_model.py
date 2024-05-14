@@ -161,7 +161,7 @@ class BaseModel(ABC):
                     # else:
                     #     torch.save(net.cpu().state_dict(), save_path)
                     unwrapped_model = self.accelerator.unwrap_model(net)
-                    self.accelerator.save(unwrapped_model.model, save_path)
+                    self.accelerator.save(unwrapped_model, save_path)
 
     def __patch_instance_norm_state_dict(self, state_dict, module, keys, i=0):
         """Fix InstanceNorm checkpoints incompatibility (prior to 0.4)"""
