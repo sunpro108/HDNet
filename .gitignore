@@ -12,6 +12,7 @@ core*
 # results and checkpoints
 checkpoints
 results*
+datasets
 
 # C extensions
 *.so
